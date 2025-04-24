@@ -111,4 +111,51 @@ public class RepositoryTestingApplicationTests {
         long uniqueCount = items.stream().map(User::getId).distinct().count();
         assertEquals(items.size(), uniqueCount);
     }
+
+    @Test
+    void shouldHandleNullValues() {
+        User userWithNulls = new User(null, null, null, "###test");
+        User saved = underTest.save(userWithNulls);
+        assertNotNull(saved.getId());
+        assertNull(saved.getName());
+        assertNull(saved.getCode());
+    }
+
+    @Test
+    void shouldHandleLongValues() {
+        String longName = "a".repeat(1000);
+        User userWithLongName = new User(null, longName, "Code", "###test");
+        User saved = underTest.save(userWithLongName);
+        assertEquals(longName, saved.getName());
+    }
+
+    @Test
+    void shouldFindMultipleByDescription() {
+        String commonDescription = "###test - Common";
+        underTest.save(new User(null, "User1", "Code1", commonDescription));
+        underTest.save(new User(null, "User2", "Code2", commonDescription));
+        
+        List<User> found = underTest.findByDescriptionContaining("Common");
+        assertEquals(2, found.size());
+    }
+
+    @Test
+    void shouldPerformBatchOperations() {
+        List<User> users = List.of(
+            new User(null, "Batch1", "Code1", "###test - batch"),
+            new User(null, "Batch2", "Code2", "###test - batch"),
+            new User(null, "Batch3", "Code3", "###test - batch")
+        );
+        
+        List<User> savedUsers = underTest.saveAll(users);
+        assertEquals(3, savedUsers.size());
+        assertTrue(savedUsers.stream().allMatch(u -> u.getId() != null));
+    }
+
+    @Test
+    void shouldHandleSpecialCharacters() {
+        User userWithSpecialChars = new User(null, "Test@#$%", "Code!@#", "###test - спеціальні символи");
+        User saved = underTest.save(userWithSpecialChars);
+        assertEquals("Test@#$%", saved.getName());
+    }
 }
