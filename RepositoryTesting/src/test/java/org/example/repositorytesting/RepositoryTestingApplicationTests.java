@@ -227,4 +227,69 @@ public class RepositoryTestingApplicationTests {
         // then
         assertEquals("Test@#$%", saved.getName());
     }
+
+    @Test
+    void whenSavingWithExistingIdThenShouldUpdate() {
+        // given
+        User initial = underTest.save(new User(null, "Initial", "Code", "###test"));
+        String existingId = initial.getId();
+        User updated = User.builder()
+                .id(existingId)
+                .name("Updated")
+                .code("NewCode")
+                .description("###test")
+                .build();
+        
+        // when
+        User result = underTest.save(updated);
+        
+        // then
+        assertEquals(existingId, result.getId());
+        assertEquals("Updated", result.getName());
+    }
+
+    @Test
+    void whenSavingMultipleWithSameIdThenLastWins() {
+        // given
+        String commonId = "test_id_123";
+        User first = User.builder()
+                .id(commonId)
+                .name("First")
+                .description("###test")
+                .build();
+        User second = User.builder()
+                .id(commonId)
+                .name("Second")
+                .description("###test")
+                .build();
+        
+        // when
+        underTest.save(first);
+        underTest.save(second);
+        User fromDb = underTest.findById(commonId).orElse(null);
+        
+        // then
+        assertNotNull(fromDb);
+        assertEquals("Second", fromDb.getName());
+    }
+
+    @Test
+    void whenIdContainsSpecialCharactersThenShouldSave() {
+        // given
+        String specialId = "test/id@123#$%";
+        User user = User.builder()
+                .id(specialId)
+                .name("Special")
+                .description("###test")
+                .build();
+        
+        // when
+        underTest.save(user);
+        User fromDb = underTest.findById(specialId).orElse(null);
+        
+        // then
+        assertNotNull(fromDb);
+        assertEquals(specialId, fromDb.getId());
+        assertEquals("Special", fromDb.getName());
+    }
 }
